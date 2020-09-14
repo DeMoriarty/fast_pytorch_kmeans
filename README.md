@@ -18,6 +18,10 @@ labels = kmeans.fit_predict(x)
 
 ## Speed Comparison
 <p>Tested on google colab with a Tesla K80 GPU</p>
+<p> sklearn: sklearn.cluster.KMeans (n_init=1)</p>
+<p> faiss: faiss.Clustering (nredo=1)</p>
+<p> fast-pytorch(ours): fast_pytorch_kmeans.KMeans </p>
+
 n_samples=100,000 n_features=64 iterations=100
 <p float="left">
   <img src="/img/fig1.png" width="49%"/>
