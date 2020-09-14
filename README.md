@@ -22,25 +22,25 @@ labels = kmeans.fit_predict(x)
 <h5> faiss: faiss.Clustering (nredo=1)</h5>
 <h5> fast-pytorch: fast_pytorch_kmeans.KMeans </h5>
 
-n_samples=100,000 n_features=64 iterations=100
+n_samples=100,000 n_features=64, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig1.png" width="49%"/>
   <img src="/img/semilog1.png" width="50%" /> 
 </p>
 
-n_samples=100,000 n_clusters=64 iterations=100
+n_samples=100,000 n_clusters=64, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig2.png" width="49%"/>
   <img src="/img/semilog2.png" width="50%" /> 
 </p>
 
-n_features=256, n_clusters=256 iterations=100
+n_features=256, n_clusters=256, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig3.png" width="49%"/>
   <img src="/img/semilog3.png" width="50%" /> 
 </p>
 
-n_features=512, n_clusters=512 iterations=100
+n_features=512, n_clusters=512, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig4.png" width="49%"/>
   <img src="/img/semilog4.png" width="50%" /> 
