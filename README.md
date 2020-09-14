@@ -1,7 +1,7 @@
 # Fast Pytorch Kmeans
 this is a pytorch implementation of K-means clustering algorithm
 
-# Quick Start
+## Quick Start
 ```python
 from kmeans import KMeans
 import torch
@@ -11,7 +11,7 @@ x = torch.randn(100000, 64, device='cuda')
 labels = kmeans.fit_predict(x)
 ```
 
-# Speed Comparison
+## Speed Comparison
 <p>Tested on google colab with a Tesla K80 GPU</p>
 n_samples=100,000 n_features=64 iterations=100
 <p float="left">
