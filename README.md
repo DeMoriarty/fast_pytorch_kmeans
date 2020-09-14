@@ -1,9 +1,14 @@
 # Fast Pytorch Kmeans
 this is a pytorch implementation of K-means clustering algorithm
 
+## Installation
+```
+pip install fast-pytorch-kmeans
+```
+
 ## Quick Start
 ```python
-from kmeans import KMeans
+from fast_pytorch_kmeans import KMeans
 import torch
 
 kmeans = KMeans(n_clusters=8, mode='euclidean', verbose=1)
