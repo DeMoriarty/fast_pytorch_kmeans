@@ -12,6 +12,7 @@ labels = kmeans.fit_predict(x)
 ```
 
 # Speed Comparison
+Tested on google colab with a Tesla K80 GPU
 n_samples=100,000 n_features=64 iterations=100
 <p float="left">
   <img src="/img/fig1.png" width="49%"/>
