@@ -21,8 +21,8 @@ labels = kmeans.fit_predict(x)
 
 <h4> sklearn: sklearn.cluster.KMeans</h4>
 <ul>
- <li>ninit = 1</li>
- <li>ninit = 100</li>
+ <li>n_init = 1</li>
+ <li>max_iter = 100</li>
  <li>tol = -1 (to force 100 iterations)</li>
 </ul>
 
@@ -32,6 +32,7 @@ labels = kmeans.fit_predict(x)
  <li>niter = 100</li>
  <li>max_point_per_centroid = 10**9 (to prevent subsample from dataset) </li>
 </ul>
+<p>note: time cost for transfering data from cpu to gpu is also included </p>
 
 <h4> fast-pytorch: fast_pytorch_kmeans.KMeans </h4>
 <ul>
