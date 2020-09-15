@@ -40,31 +40,31 @@ labels = kmeans.fit_predict(x)
  <li>minibatch = None </li>
 </ul>
 
-### n_samples=100,000 n_features=256, time spent for 100 iterations
+### 1. n_samples=100,000, n_features=256, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig1.png" width="49%"/>
   <img src="/img/semilog1.png" width="50%" /> 
 </p>
 
-### n_samples=100,000 n_clusters=256, time spent for 100 iterations
+### 2. n_samples=100,000, n_clusters=256, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig2.png" width="49%"/>
   <img src="/img/semilog2.png" width="50%" /> 
 </p>
 
-### n_features=256, n_clusters=256, time spent for 100 iterations
+### 3. n_features=256, n_clusters=256, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig3.png" width="49%"/>
   <img src="/img/semilog3.png" width="50%" /> 
 </p>
 
-### n_features=32, n_clusters=1024, time spent for 100 iterations
+### 4. n_features=32, n_clusters=1024, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig4.png" width="49%"/>
   <img src="/img/semilog4.png" width="50%" /> 
 </p>
 
-### n_features=1024, n_clusters=32, time spent for 100 iterations
+### 5. n_features=1024, n_clusters=32, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig5.png" width="49%"/>
   <img src="/img/semilog5.png" width="50%" /> 
