@@ -3,7 +3,7 @@ class MultiKMeans:
   Kmeans clustering algorithm implemented with PyTorch
   Parameters:
     n_kmeans: int,
-      Number of concurrent KMeans
+      Number of concurrent KMeans algorithms
     n_clusters: int, 
       Number of clusters
     max_iter: int, default: 100
@@ -140,31 +140,23 @@ class MultiKMeans:
     n_stream, batch_size, emb_dim = X.shape
     device = X.device.type
     start_time = time()
-    tick(True)#0
     if self.centroids is None:
       self.centroids = X[:, np.random.choice(batch_size, size=[self.n_clusters], replace=False)]
 
     if centroids is not None:
       self.centroids = centroids
-    tick()#1
     num_points_in_clusters = torch.ones(self.n_kmeans, self.n_clusters, device=device)
-    tick()#2
     closest = None
     for i in range(self.max_iter):
       iter_time = time()
-      tick()#3
       if self.minibatch is not None:
         x = X[:, np.random.choice(batch_size, size=[self.minibatch], replace=False)]
       else:
         x = X
-      tick()#4
       closest = self.max_sim(a=x, b=self.centroids)[1]
-      tick()#5
       # matched_clusters, counts = closest.unique(return_counts=True)
       uniques = [closest[i].unique(return_counts=True) for i in range(self.n_kmeans)]
-      tick()#6
       c_grad = torch.zeros_like(self.centroids)
-      tick()#7
       if self._loop:
         for j, count in zip(matched_clusters, counts):
           c_grad[j] = x[closest==j].sum(dim=-2) / count
@@ -191,39 +183,32 @@ class MultiKMeans:
         #   sub_mask = (sub_expanded_closest==sub_matched_clusters[:, None]).to(x.dtype)
         #   sub_prod = sub_mask @ x / sub_mask.sum(1)[:, None]
         #   c_grad[sub_matched_clusters] = sub_prod
-      tick()#8
       error = (c_grad - self.centroids).pow(2).sum()
-      tick()#9
       if self.minibatch is not None:
         lr = 1/num_points_in_clusters[:,:,None] * 0.9 + 0.1
-        # lr = 1/num_points_in_clusters[:,None]**0.1 
       else:
         lr = 1
-      tick()#10
       for j in range(self.n_kmeans):
         num_points_in_clusters[j, uniques[j][0]] += uniques[j][1]
-      tick()#11
       self.centroids = self.centroids * (1-lr) + c_grad * lr
-      tick()#12
       if self.verbose >= 2:
         print('iter:', i, 'error:', error.item(), 'time spent:', round(time()-iter_time, 4))
       if error <= self.tol * self.n_kmeans:
         break
 
-    # # SCATTER
-    # if self._show:
-    #   if self.mode is "cosine":
-    #     sim = self.cos_sim(x, self.centroids)
-    #   elif self.mode is "euclidean":
-    #     sim = self.euc_sim(x, self.centroids)
-    #   closest = sim.argmax(dim=-1)
-    #   plt.scatter(X[:, 0].cpu(), X[:, 1].cpu(), c=closest.cpu(), marker='.', cmap='hsv')
-    #   # plt.scatter(c[:,0].cpu(), c[:,1].cpu(), marker='o', cmap='red')
-    #   plt.show()
-    # # END SCATTER
+    # SCATTER
+    if self._show:
+      if self.mode is "cosine":
+        sim = self.cos_sim(x, self.centroids)
+      elif self.mode is "euclidean":
+        sim = self.euc_sim(x, self.centroids)
+      closest = sim.argmax(dim=-1)
+      plt.scatter(X[:, 0].cpu(), X[:, 1].cpu(), c=closest.cpu(), marker='.', cmap='hsv')
+      # plt.scatter(c[:,0].cpu(), c[:,1].cpu(), marker='o', cmap='red')
+      plt.show()
+    # END SCATTER
     if self.verbose >= 1:
       print(f'used {i+1} iterations ({round(time()-start_time, 4)}s) to cluster {self.n_kmeans}x{batch_size} items into {self.n_clusters} clusters')
-    closest = self.max_sim(a=X, b=self.centroids)[1]
     return closest
 
   def predict(self, X):
