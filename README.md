@@ -17,31 +17,55 @@ labels = kmeans.fit_predict(x)
 ```
 
 ## Speed Comparison
-<p>Tested on google colab with a Tesla K80 GPU</p>
-<h5> sklearn: sklearn.cluster.KMeans (n_init=1)</h5>
-<h5> faiss: faiss.Clustering (nredo=1)</h5>
-<h5> fast-pytorch: fast_pytorch_kmeans.KMeans </h5>
+<p>Tested on google colab with Intel(R) Xeon(R) CPU @ 2.00GHz and Nvidia Tesla T4 GPU</p>
 
-n_samples=100,000 n_features=64, time spent for 100 iterations
+<h4> sklearn: sklearn.cluster.KMeans</h4>
+<ul>
+ <li>ninit = 1</li>
+ <li>ninit = 100</li>
+ <li>tol = -1 (to force 100 iterations)</li>
+</ul>
+
+<h4> faiss: faiss.Clustering </h4>
+<ul>
+ <li>nredo = 1</li>
+ <li>niter = 100</li>
+ <li>max_point_per_centroid = 10**9 (to prevent subsample from dataset) </li>
+</ul>
+
+<h4> fast-pytorch: fast_pytorch_kmeans.KMeans </h4>
+<ul>
+ <li>max_iter = 100 </li>
+ <li>tol = -1 (to force 100 iterations)</li>
+ <li>minibatch = None </li>
+</ul>
+
+### n_samples=100,000 n_features=256, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig1.png" width="49%"/>
   <img src="/img/semilog1.png" width="50%" /> 
 </p>
 
-n_samples=100,000 n_clusters=64, time spent for 100 iterations
+### n_samples=100,000 n_clusters=256, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig2.png" width="49%"/>
   <img src="/img/semilog2.png" width="50%" /> 
 </p>
 
-n_features=256, n_clusters=256, time spent for 100 iterations
+### n_features=256, n_clusters=256, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig3.png" width="49%"/>
   <img src="/img/semilog3.png" width="50%" /> 
 </p>
 
-n_features=512, n_clusters=512, time spent for 100 iterations
+### n_features=32, n_clusters=1024, time spent for 100 iterations
 <p float="left">
   <img src="/img/fig4.png" width="49%"/>
   <img src="/img/semilog4.png" width="50%" /> 
+</p>
+
+### n_features=1024, n_clusters=32, time spent for 100 iterations
+<p float="left">
+  <img src="/img/fig5.png" width="49%"/>
+  <img src="/img/semilog5.png" width="50%" /> 
 </p>
