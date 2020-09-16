@@ -179,6 +179,7 @@ class KMeans:
           expanded_closest = closest[None].expand(self.n_clusters, -1)
           mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[:, None]).float()
           c_grad = mask @ x / mask.sum(-1)[..., :, None]
+          c_grad[c_grad!=c_grad] = 0 # remove NaNs
         else:
           expanded_closest = closest[None].expand(len(matched_clusters), -1)
           mask = (expanded_closest==matched_clusters[:, None]).float()
