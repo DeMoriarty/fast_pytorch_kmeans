@@ -46,6 +46,7 @@ class MultiKMeans:
       self._pynvml_exist = False
     
     self.centroids = None
+    self.num_points_in_clusters = None
 
   @staticmethod
   def cos_sim(a, b):
@@ -150,7 +151,8 @@ class MultiKMeans:
 
     if centroids is not None:
       self.centroids = centroids
-    num_points_in_clusters = torch.ones(self.n_kmeans, self.n_clusters, device=device)
+    if self.num_points_in_clusters is None:
+      self.num_points_in_clusters = torch.ones(self.n_kmeans, self.n_clusters, device=device)
     closest = None
     for i in range(self.max_iter):
       iter_time = time()
@@ -191,11 +193,11 @@ class MultiKMeans:
         #   c_grad[sub_matched_clusters] = sub_prod
       error = (c_grad - self.centroids).pow(2).sum()
       if self.minibatch is not None:
-        lr = 1/num_points_in_clusters[:,:,None] * 0.9 + 0.1
+        lr = 1/self.num_points_in_clusters[:,:,None] * 0.9 + 0.1
       else:
         lr = 1
       for j in range(self.n_kmeans):
-        num_points_in_clusters[j, uniques[j][0]] += uniques[j][1]
+        self.num_points_in_clusters[j, uniques[j][0]] += uniques[j][1]
       self.centroids = self.centroids * (1-lr) + c_grad * lr
       if self.verbose >= 2:
         print('iter:', i, 'error:', error.item(), 'time spent:', round(time()-iter_time, 4))
