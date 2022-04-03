@@ -230,7 +230,7 @@ class KMeans:
     # END SCATTER
     if self.verbose >= 1:
       print(f'used {i+1} iterations ({round(time()-start_time, 4)}s) to cluster {batch_size} items into {self.n_clusters} clusters')
-    return closest
+    return closest, self.centroids
 
   def predict(self, X):
     """
