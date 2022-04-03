@@ -31,7 +31,7 @@ class KMeans:
     centroids: torch.Tensor, shape: [n_clusters, n_features]
       cluster centroids
   '''
-  def __init__(self, n_clusters, max_iter=100, tol=0.0001, verbose=0, mode="euclidean", minibatch=None):
+  def __init__(self, n_clusters, max_iter=100, tol=0.0001, verbose=0, mode="euclidean", minibatch=None,device = 0):
     self.n_clusters = n_clusters
     self.max_iter = max_iter
     self.tol = tol
@@ -40,7 +40,7 @@ class KMeans:
     self.minibatch = minibatch
     self._loop = False
     self._show = False
-
+    self.device = device
     try:
       import PYNVML
       self._pynvml_exist = True
@@ -48,6 +48,7 @@ class KMeans:
       self._pynvml_exist = False
     
     self.centroids = None
+    self.num_points_in_clusters = None
 
   @staticmethod
   def cos_sim(a, b):
@@ -89,7 +90,7 @@ class KMeans:
       info = pynvml.nvmlDeviceGetMemoryInfo(gpu_handle)
       remaining = info.free
     else:
-      remaining = torch.cuda.memory_allocated()
+      remaining = torch.cuda.memory_allocated(self.device)
     return remaining
 
   def max_sim(self, a, b):
@@ -102,7 +103,7 @@ class KMeans:
 
       b: torch.Tensor, shape: [n, n_features]
     """
-    device = a.device.type
+    device = a.device
     batch_size = a.shape[0]
     if self.mode == 'cosine':
       sim_func = self.cos_sim
@@ -153,13 +154,15 @@ class KMeans:
       labels: torch.Tensor, shape: [n_samples]
     """
     batch_size, emb_dim = X.shape
-    device = X.device.type
+    device = X.device
+   
     start_time = time()
     if centroids is None:
       self.centroids = X[np.random.choice(batch_size, size=[self.n_clusters], replace=False)]
     else:
       self.centroids = centroids
-    num_points_in_clusters = torch.ones(self.n_clusters, device=device)
+    if self.num_points_in_clusters is None:
+      self.num_points_in_clusters = torch.ones(self.n_clusters, device=device)
     closest = None
     for i in range(self.max_iter):
       iter_time = time()
@@ -206,11 +209,11 @@ class KMeans:
         #   c_grad[sub_matched_clusters] = sub_prod
       error = (c_grad - self.centroids).pow(2).sum()
       if self.minibatch is not None:
-        lr = 1/num_points_in_clusters[:,None] * 0.9 + 0.1
-        # lr = 1/num_points_in_clusters[:,None]**0.1 
+        lr = 1/self.num_points_in_clusters[:,None] * 0.9 + 0.1
+        # lr = 1/self.num_points_in_clusters[:,None]**0.1 
       else:
         lr = 1
-      num_points_in_clusters[matched_clusters] += counts
+      self.num_points_in_clusters[matched_clusters] += counts
       self.centroids = self.centroids * (1-lr) + c_grad * lr
       if self.verbose >= 2:
         print('iter:', i, 'error:', error.item(), 'time spent:', round(time()-iter_time, 4))
@@ -219,9 +222,9 @@ class KMeans:
 
     # SCATTER
     if self._show:
-      if self.mode is "cosine":
+      if self.mode == "cosine":
         sim = self.cos_sim(x, self.centroids)
-      elif self.mode is "euclidean":
+      elif self.mode == "euclidean":
         sim = self.euc_sim(x, self.centroids)
       closest = sim.argmax(dim=-1)
       plt.scatter(X[:, 0].cpu(), X[:, 1].cpu(), c=closest.cpu(), marker='.', cmap='hsv')
@@ -230,7 +233,7 @@ class KMeans:
     # END SCATTER
     if self.verbose >= 1:
       print(f'used {i+1} iterations ({round(time()-start_time, 4)}s) to cluster {batch_size} items into {self.n_clusters} clusters')
-    return closest, self.centroids
+    return closest,self.centroids
 
   def predict(self, X):
     """
