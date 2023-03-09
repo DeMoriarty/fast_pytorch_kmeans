@@ -204,9 +204,9 @@ class MultiKMeans:
 
     # SCATTER
     if self._show:
-      if self.mode is "cosine":
+      if self.mode == "cosine":
         sim = self.cos_sim(x, self.centroids)
-      elif self.mode is "euclidean":
+      elif self.mode == "euclidean":
         sim = self.euc_sim(x, self.centroids)
       closest = sim.argmax(dim=-1)
       plt.scatter(X[:, 0].cpu(), X[:, 1].cpu(), c=closest.cpu(), marker='.', cmap='hsv')
