@@ -159,7 +159,7 @@ class KMeans:
       self.centroids = X[np.random.choice(batch_size, size=[self.n_clusters], replace=False)]
     else:
       self.centroids = centroids
-    num_points_in_clusters = torch.ones(self.n_clusters, device=device)
+    num_points_in_clusters = torch.ones(self.n_clusters, device=device, dtype=X.dtype)
     closest = None
     for i in range(self.max_iter):
       iter_time = time()
@@ -177,33 +177,13 @@ class KMeans:
       else:
         if self.minibatch is None:
           expanded_closest = closest[None].expand(self.n_clusters, -1)
-          mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[:, None]).float()
+          mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[:, None]).to(X.dtype)
           c_grad = mask @ x / mask.sum(-1)[..., :, None]
           c_grad[c_grad!=c_grad] = 0 # remove NaNs
         else:
           expanded_closest = closest[None].expand(len(matched_clusters), -1)
-          mask = (expanded_closest==matched_clusters[:, None]).float()
-          c_grad[matched_clusters] = mask @ x / mask.sum(-1)[..., :, None]
+          mask = (expanded_closest==matched_clusters[:, None]).to(X.dtype)
 
-
-        # if x.dtype == torch.float:
-        #   expected = closest.numel() * len(matched_clusters) * 5 # bool+float
-        # elif x.dtype == torch.half:
-        #   expected = closest.numel() * len(matched_clusters) * 3 # bool+half
-        # if device == 'cpu':
-        #   ratio = 1
-        # else:
-        #   ratio = math.ceil(expected / self.remaining_memory() )
-        # # ratio = 1
-        # subbatch_size = math.ceil(len(matched_clusters)/ratio)
-        # for j in range(ratio):
-        #   if j*subbatch_size >= batch_size:
-        #     continue
-        #   sub_matched_clusters = matched_clusters[j*subbatch_size: (j+1)*subbatch_size]
-        #   sub_expanded_closest = closest[None].expand(len(sub_matched_clusters), -1)
-        #   sub_mask = (sub_expanded_closest==sub_matched_clusters[:, None]).to(x.dtype)
-        #   sub_prod = sub_mask @ x / sub_mask.sum(1)[:, None]
-        #   c_grad[sub_matched_clusters] = sub_prod
       error = (c_grad - self.centroids).pow(2).sum()
       if self.minibatch is not None:
         lr = 1/num_points_in_clusters[:,None] * 0.9 + 0.1
@@ -217,17 +197,6 @@ class KMeans:
       if error <= self.tol:
         break
 
-    # SCATTER
-    if self._show:
-      if self.mode == "cosine":
-        sim = self.cos_sim(x, self.centroids)
-      elif self.mode == "euclidean":
-        sim = self.euc_sim(x, self.centroids)
-      closest = sim.argmax(dim=-1)
-      plt.scatter(X[:, 0].cpu(), X[:, 1].cpu(), c=closest.cpu(), marker='.', cmap='hsv')
-      # plt.scatter(c[:,0].cpu(), c[:,1].cpu(), marker='o', cmap='red')
-      plt.show()
-    # END SCATTER
     if self.verbose >= 1:
       print(f'used {i+1} iterations ({round(time()-start_time, 4)}s) to cluster {batch_size} items into {self.n_clusters} clusters')
     return closest

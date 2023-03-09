@@ -125,7 +125,7 @@ class MultiKMeans:
 
     if centroids is not None:
       self.centroids = centroids
-    num_points_in_clusters = torch.ones(self.n_kmeans, self.n_clusters, device=device)
+    num_points_in_clusters = torch.ones(self.n_kmeans, self.n_clusters, device=device, dtype=X.dtype)
     closest = None
     for i in range(self.max_iter):
       iter_time = time()
@@ -138,7 +138,7 @@ class MultiKMeans:
       c_grad = torch.zeros_like(self.centroids)
 
       expanded_closest = closest[:, None].expand(-1, self.n_clusters, -1)
-      mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[None, :, None]).float()
+      mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[None, :, None]).to(X.dtype)
       c_grad = mask @ x / mask.sum(-1, keepdim=True)
       c_grad[c_grad!=c_grad] = 0 # remove NaNs
 
