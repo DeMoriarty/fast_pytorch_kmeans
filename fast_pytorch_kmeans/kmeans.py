@@ -114,6 +114,8 @@ class KMeans:
       max_sim_v, max_sim_i = sim.max(dim=-1)
       return max_sim_v, max_sim_i
     else:
+      if a.dtype == torch.double:
+        expected = a.shape[0] * a.shape[1] * b.shape[0] * 8
       if a.dtype == torch.float:
         expected = a.shape[0] * a.shape[1] * b.shape[0] * 4
       elif a.dtype == torch.half:
@@ -152,6 +154,10 @@ class KMeans:
       Return:
       labels: torch.Tensor, shape: [n_samples]
     """
+    assert isinstance(X, torch.Tensor), "input must be torch.Tensor"
+    assert X.dtype in [torch.half, torch.float, torch.double], "input must be floating point"
+    assert X.ndim == 2, "input must be a 2d tensor with shape: [n_samples, n_features] "
+
     batch_size, emb_dim = X.shape
     device = X.device.type
     start_time = time()
@@ -211,6 +217,10 @@ class KMeans:
       Return:
       labels: torch.Tensor, shape: [n_samples]
     """
+    assert isinstance(X, torch.Tensor), "input must be torch.Tensor"
+    assert X.dtype in [torch.half, torch.float, torch.double], "input must be floating point"
+    assert X.ndim == 2, "input must be a 2d tensor with shape: [n_samples, n_features] "
+
     return self.max_sim(a=X, b=self.centroids)[1]
 
   def fit(self, X, centroids=None):
@@ -220,4 +230,8 @@ class KMeans:
       Parameters:
       X: torch.Tensor, shape: [n_samples, n_features]
     """
+    assert isinstance(X, torch.Tensor), "input must be torch.Tensor"
+    assert X.dtype in [torch.half, torch.float, torch.double], "input must be floating point"
+    assert X.ndim == 2, "input must be a 2d tensor with shape: [n_samples, n_features] "
+
     self.fit_predict(X, centroids)

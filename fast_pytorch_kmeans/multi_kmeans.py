@@ -115,6 +115,10 @@ class MultiKMeans:
       Return:
       labels: torch.Tensor, shape: [n_samples]
     """
+    assert isinstance(X, torch.Tensor), "input must be torch.Tensor"
+    assert X.dtype in [torch.half, torch.float, torch.double], "input must be floating point"
+    assert X.ndim == 3, "input must be a 3d tensor with shape: [n_kmeans, n_samples, n_features]"
+    
     n_kmeans, n_samples, n_features = X.shape
     self.n_kmeans = n_kmeans
 
@@ -167,6 +171,10 @@ class MultiKMeans:
       Return:
       labels: torch.Tensor, shape: [n_kmeans, n_samples]
     """
+    assert isinstance(X, torch.Tensor), "input must be torch.Tensor"
+    assert X.dtype in [torch.half, torch.float, torch.double], "input must be floating point"
+    assert X.ndim == 3, "input must be a 3d tensor with shape: [n_kmeans, n_samples, n_features]"
+
     return self.max_sim(a=X, b=self.centroids)[1]
 
   def fit(self, X, centroids=None):
@@ -175,4 +183,8 @@ class MultiKMeans:
       Parameters:
       X: torch.Tensor, shape: [n_kmeans, n_samples, n_features]
     """
+    assert isinstance(X, torch.Tensor), "input must be torch.Tensor"
+    assert X.dtype in [torch.half, torch.float, torch.double], "input must be floating point"
+    assert X.ndim == 3, "input must be a 3d tensor with shape: [n_kmeans, n_samples, n_features]"
+
     self.fit_predict(X, centroids)
