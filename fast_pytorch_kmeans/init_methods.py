@@ -122,7 +122,7 @@ def _kpoints(data, k, sample_size=-1):
 
 
 init_methods = {
-    "random": _krandinit,
-    "++": _kpp,
-    "points": _kpoints,
+    "gaussian": _krandinit,
+    "kmeans++": _kpp,
+    "random": _kpoints,
 }
