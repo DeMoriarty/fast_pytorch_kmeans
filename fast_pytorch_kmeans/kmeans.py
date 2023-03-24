@@ -182,18 +182,10 @@ class KMeans:
       matched_clusters, counts = closest.unique(return_counts=True)
 
       c_grad = torch.zeros_like(self.centroids)
-      if self._loop:
-        for j, count in zip(matched_clusters, counts):
-          c_grad[j] = x[closest==j].sum(dim=0) / count
-      else:
-        if self.minibatch is None:
-          expanded_closest = closest[None].expand(self.n_clusters, -1)
-          mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[:, None]).to(X.dtype)
-          c_grad = mask @ x / mask.sum(-1)[..., :, None]
-          c_grad[c_grad!=c_grad] = 0 # remove NaNs
-        else:
-          expanded_closest = closest[None].expand(len(matched_clusters), -1)
-          mask = (expanded_closest==matched_clusters[:, None]).to(X.dtype)
+      expanded_closest = closest[None].expand(self.n_clusters, -1)
+      mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[:, None]).to(X.dtype)
+      c_grad = mask @ x / mask.sum(-1)[..., :, None]
+      c_grad[c_grad!=c_grad] = 0 # remove NaNs
 
       error = (c_grad - self.centroids).pow(2).sum()
       if self.minibatch is not None:
