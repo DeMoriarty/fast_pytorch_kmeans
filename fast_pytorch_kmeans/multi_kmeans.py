@@ -2,6 +2,7 @@ import math
 import torch
 from time import time
 import numpy as np
+from .init_methods import init_methods
 
 class MultiKMeans:
   '''
@@ -18,6 +19,8 @@ class MultiKMeans:
       Verbosity
     mode: {'euclidean', 'cosine'}, default: 'euclidean'
       Type of distance measure
+    init_method: {'gaussian', 'random', 'k-means++'}
+      Type of initialization
     minibatch: {None, int}, default: None
       Batch size of MinibatchKmeans algorithm
       if None perform full KMeans algorithm
@@ -26,12 +29,13 @@ class MultiKMeans:
     centroids: torch.Tensor, shape: [n_clusters, n_features]
       cluster centroids
   '''
-  def __init__(self, n_clusters, max_iter=100, tol=0.0001, verbose=0, mode="euclidean", minibatch=None):
+  def __init__(self, n_clusters, n_kmeans, max_iter=100, tol=0.0001, verbose=0, mode="euclidean", init_method='random', minibatch=None):
     self.n_clusters = n_clusters
     self.max_iter = max_iter
     self.tol = tol
     self.verbose = verbose
     self.mode = mode
+    self.init_method = init_method
     self.minibatch = minibatch
     self._loop = False
     self._show = False
@@ -125,7 +129,12 @@ class MultiKMeans:
     device = X.device.type
     start_time = time()
     if self.centroids is None:
-      self.centroids = X[:, np.random.choice(n_samples, size=[self.n_clusters], replace=False)]
+      if len(X.shape) == 3:
+        self.centroids = np.stack([init_methods[self.init_method](X[n], self.n_clusters, self.minibatch)] for n in range(X.shape[0]))
+      elif len(X.shape) == 2:
+        self.centroids = init_methods[self.init_method](X, self.n_clusters, self.minibatch)
+      else:
+        return TypeError(f'Expecting 2d or 3d array to fit Multi-KMeans! Got {len(X.shape)}d array.')
 
     if centroids is not None:
       self.centroids = centroids
