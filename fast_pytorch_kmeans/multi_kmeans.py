@@ -129,12 +129,7 @@ class MultiKMeans:
     device = X.device.type
     start_time = time()
     if self.centroids is None:
-      if len(X.shape) == 3:
-        self.centroids = np.stack([init_methods[self.init_method](X[n], self.n_clusters, self.minibatch)] for n in range(X.shape[0]))
-      elif len(X.shape) == 2:
-        self.centroids = init_methods[self.init_method](X, self.n_clusters, self.minibatch)
-      else:
-        return TypeError(f'Expecting 2d or 3d array to fit Multi-KMeans! Got {len(X.shape)}d array.')
+      self.centroids = torch.stack([init_methods[self.init_method](X[n], self.n_clusters, self.minibatch) for n in range(X.shape[0])], dim=0)
 
     if centroids is not None:
       self.centroids = centroids
