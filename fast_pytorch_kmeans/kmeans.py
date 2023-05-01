@@ -1,5 +1,6 @@
 import math
 import torch
+from torch.nn.functional import normalize
 from time import time
 import numpy as np
 from init_methods import init_methods
@@ -64,11 +65,7 @@ class KMeans:
 
       b: torch.Tensor, shape: [n, n_features]
     """
-    a_norm = a.norm(dim=-1, keepdim=True)
-    b_norm = b.norm(dim=-1, keepdim=True)
-    a = a / (a_norm + 1e-8)
-    b = b / (b_norm + 1e-8)
-    return a @ b.transpose(-2, -1)
+    return normalize(a, dim=-1) @ normalize(b, dim=-1).transpose(-2, -1)
 
   @staticmethod
   def euc_sim(a, b):
