@@ -3,7 +3,7 @@ import torch
 from torch.nn.functional import normalize
 from time import time
 import numpy as np
-from init_methods import init_methods
+from .init_methods import init_methods
 
 class KMeans:
   '''
@@ -79,19 +79,22 @@ class KMeans:
     """
     return 2 * a @ b.transpose(-2, -1) -(a**2).sum(dim=1)[..., :, None] - (b**2).sum(dim=1)[..., None, :]
 
-  def remaining_memory(self):
+  def remaining_memory(self, device=None):
     """
       Get remaining memory in gpu
     """
-    torch.cuda.synchronize()
+    if device is None:
+      device = torch.device("cuda:0")
+
+    torch.cuda.synchronize(device)
     torch.cuda.empty_cache()
     if self._pynvml_exist:
       pynvml.nvmlInit()
-      gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+      gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(device.index)
       info = pynvml.nvmlDeviceGetMemoryInfo(gpu_handle)
       remaining = info.free
     else:
-      remaining = torch.cuda.memory_allocated()
+      remaining = torch.cuda.memory_allocated(device)
     return remaining
 
   def max_sim(self, a, b):
@@ -104,14 +107,14 @@ class KMeans:
 
       b: torch.Tensor, shape: [n, n_features]
     """
-    device = a.device.type
+    device = a.device
     batch_size = a.shape[0]
     if self.mode == 'cosine':
       sim_func = self.cos_sim
     elif self.mode == 'euclidean':
       sim_func = self.euc_sim
 
-    if device == 'cpu':
+    if device.type == 'cpu':
       sim = sim_func(a, b)
       max_sim_v, max_sim_i = sim.max(dim=-1)
       return max_sim_v, max_sim_i
@@ -122,7 +125,7 @@ class KMeans:
         expected = a.shape[0] * a.shape[1] * b.shape[0] * 4
       elif a.dtype == torch.half:
         expected = a.shape[0] * a.shape[1] * b.shape[0] * 2
-      ratio = math.ceil(expected / self.remaining_memory())
+      ratio = math.ceil(expected / self.remaining_memory(device))
       subbatch_size = math.ceil(batch_size / ratio)
       msv, msi = [], []
       for i in range(ratio):
@@ -161,7 +164,7 @@ class KMeans:
     assert X.ndim == 2, "input must be a 2d tensor with shape: [n_samples, n_features] "
 
     batch_size, emb_dim = X.shape
-    device = X.device.type
+    device = X.device
     start_time = time()
     if centroids is None:
       self.centroids = init_methods[self.init_method](X, self.n_clusters, self.minibatch)

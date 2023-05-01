@@ -30,7 +30,7 @@ class MultiKMeans:
     centroids: torch.Tensor, shape: [n_clusters, n_features]
       cluster centroids
   '''
-  def __init__(self, n_clusters, n_kmeans, max_iter=100, tol=0.0001, verbose=0, mode="euclidean", init_method='random', minibatch=None):
+  def __init__(self, n_clusters, max_iter=100, tol=0.0001, verbose=0, mode="euclidean", init_method='random', minibatch=None):
     self.n_clusters = n_clusters
     self.max_iter = max_iter
     self.tol = tol
@@ -69,19 +69,22 @@ class MultiKMeans:
     """
     return 2 * a @ b.transpose(-2, -1) -(a**2).sum(dim=-1)[..., :, None] - (b**2).sum(dim=-1)[..., None, :]
 
-  def remaining_memory(self):
+  def remaining_memory(self, device=None):
     """
       Get remaining memory in gpu
     """
-    torch.cuda.synchronize()
+    if device is None:
+      device = torch.device("cuda:0")
+
+    torch.cuda.synchronize(device)
     torch.cuda.empty_cache()
     if self._pynvml_exist:
       pynvml.nvmlInit()
-      gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+      gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(device.index)
       info = pynvml.nvmlDeviceGetMemoryInfo(gpu_handle)
       remaining = info.free
     else:
-      remaining = torch.cuda.memory_allocated()
+      remaining = torch.cuda.memory_allocated(device)
     return remaining
 
   def max_sim(self, a, b):
@@ -92,7 +95,7 @@ class MultiKMeans:
       a: torch.Tensor, shape: [m, n_features]
       b: torch.Tensor, shape: [n, n_features]
     """
-    device = a.device.type
+    device = a.device
     n_samples = a.shape[-2]
     if self.mode == 'cosine':
       sim_func = self.cos_sim
