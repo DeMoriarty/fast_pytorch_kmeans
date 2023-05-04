@@ -129,8 +129,6 @@ class KMeans:
       subbatch_size = math.ceil(batch_size / ratio)
       msv, msi = [], []
       for i in range(ratio):
-        if i*subbatch_size >= batch_size:
-          continue
         sub_x = a[i*subbatch_size: (i+1)*subbatch_size]
         sub_sim = self.sim_func(sub_x, b)
         sub_max_sim_v, sub_max_sim_i = sub_sim.max(dim=-1)
