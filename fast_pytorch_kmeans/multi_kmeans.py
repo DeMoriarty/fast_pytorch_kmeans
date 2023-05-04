@@ -148,7 +148,7 @@ class MultiKMeans:
       expanded_closest = closest[:, None].expand(-1, self.n_clusters, -1)
       mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[None, :, None]).to(X.dtype)
       c_grad = mask @ x / mask.sum(-1, keepdim=True)
-      c_grad[c_grad!=c_grad] = 0 # remove NaNs
+      torch.nan_to_num_(c_grad)
 
       error = (c_grad - self.centroids).pow(2).sum()
       if self.minibatch is not None:
