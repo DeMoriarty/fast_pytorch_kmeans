@@ -41,11 +41,17 @@ class KMeans:
     self.max_iter = max_iter
     self.tol = tol
     self.verbose = verbose
-    self.mode = mode
     self.init_method = init_method
     self.minibatch = minibatch
     self._loop = False
     self._show = False
+
+    if mode == 'cosine':
+      self.sim_func = self.cos_sim
+    elif mode == 'euclidean':
+      self.sim_func = self.euc_sim
+    else:
+      raise NotImplementedError()
 
     try:
       import PYNVML
@@ -77,7 +83,7 @@ class KMeans:
 
       b: torch.Tensor, shape: [n, n_features]
     """
-    return 2 * a @ b.transpose(-2, -1) -(a**2).sum(dim=1)[..., :, None] - (b**2).sum(dim=1)[..., None, :]
+    return 2 * a @ b.transpose(-2, -1) - (a**2).sum(dim=1)[..., :, None] - (b**2).sum(dim=1)[..., None, :]
 
   def remaining_memory(self, device=None):
     """
@@ -109,13 +115,9 @@ class KMeans:
     """
     device = a.device
     batch_size = a.shape[0]
-    if self.mode == 'cosine':
-      sim_func = self.cos_sim
-    elif self.mode == 'euclidean':
-      sim_func = self.euc_sim
 
     if device.type == 'cpu':
-      sim = sim_func(a, b)
+      sim = self.sim_func(a, b)
       max_sim_v, max_sim_i = sim.max(dim=-1)
       return max_sim_v, max_sim_i
     else:
@@ -132,7 +134,7 @@ class KMeans:
         if i*subbatch_size >= batch_size:
           continue
         sub_x = a[i*subbatch_size: (i+1)*subbatch_size]
-        sub_sim = sim_func(sub_x, b)
+        sub_sim = self.sim_func(sub_x, b)
         sub_max_sim_v, sub_max_sim_i = sub_sim.max(dim=-1)
         del sub_sim
         msv.append(sub_max_sim_v)

@@ -35,11 +35,17 @@ class MultiKMeans:
     self.max_iter = max_iter
     self.tol = tol
     self.verbose = verbose
-    self.mode = mode
     self.init_method = init_method
     self.minibatch = minibatch
     self._loop = False
     self._show = False
+
+    if mode == 'cosine':
+      self.sim_func = self.cos_sim
+    elif mode == 'euclidean':
+      self.sim_func = self.euc_sim
+    else:
+      raise NotImplementedError()
 
     try:
       import PYNVML
@@ -97,12 +103,8 @@ class MultiKMeans:
     """
     device = a.device
     n_samples = a.shape[-2]
-    if self.mode == 'cosine':
-      sim_func = self.cos_sim
-    elif self.mode == 'euclidean':
-      sim_func = self.euc_sim
 
-    sim = sim_func(a, b)
+    sim = self.sim_func(a, b)
     max_sim_v, max_sim_i = sim.max(dim=-1)
     return max_sim_v, max_sim_i
 
