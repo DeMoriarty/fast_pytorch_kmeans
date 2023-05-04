@@ -170,7 +170,9 @@ class KMeans:
       self.centroids = centroids
     if self.minibatch is not None:
       num_points_in_clusters = torch.ones(self.n_clusters, device=device, dtype=X.dtype)
+
     closest = None
+    arranged_mask = torch.arange(self.n_clusters, device=device)[:, None]
     for i in range(self.max_iter):
       iter_time = time()
       if self.minibatch is not None:
@@ -182,7 +184,7 @@ class KMeans:
         closest = self.max_sim(a=x, b=self.centroids)[1]
 
       expanded_closest = closest[None].expand(self.n_clusters, -1)
-      mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[:, None]).to(X.dtype)
+      mask = (expanded_closest==arranged_mask).to(X.dtype)
       c_grad = mask @ x / mask.sum(-1)[..., :, None]
       torch.nan_to_num_(c_grad)
 
