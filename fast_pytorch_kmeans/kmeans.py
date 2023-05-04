@@ -175,10 +175,11 @@ class KMeans:
       iter_time = time()
       if self.minibatch is not None:
         x = X[np.random.choice(batch_size, size=[self.minibatch], replace=False)]
+        closest = self.max_sim(a=x, b=self.centroids)[1]
+        matched_clusters, counts = closest.unique(return_counts=True)
       else:
         x = X
-      closest = self.max_sim(a=x, b=self.centroids)[1]
-      matched_clusters, counts = closest.unique(return_counts=True)
+        closest = self.max_sim(a=x, b=self.centroids)[1]
 
       expanded_closest = closest[None].expand(self.n_clusters, -1)
       mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[:, None]).to(X.dtype)

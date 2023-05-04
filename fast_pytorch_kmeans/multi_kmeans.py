@@ -140,10 +140,11 @@ class MultiKMeans:
       iter_time = time()
       if self.minibatch is not None:
         x = X[:, np.random.choice(n_samples, size=[self.minibatch], replace=False)]
+        closest = self.max_sim(a=x, b=self.centroids)[1]
+        uniques = [closest[i].unique(return_counts=True) for i in range(self.n_kmeans)]
       else:
         x = X
-      closest = self.max_sim(a=x, b=self.centroids)[1]
-      uniques = [closest[i].unique(return_counts=True) for i in range(self.n_kmeans)]
+        closest = self.max_sim(a=x, b=self.centroids)[1]
 
       expanded_closest = closest[:, None].expand(-1, self.n_clusters, -1)
       mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[None, :, None]).to(X.dtype)
