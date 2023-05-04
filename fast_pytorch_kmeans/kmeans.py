@@ -83,13 +83,10 @@ class KMeans:
     """
     return 2 * a @ b.transpose(-2, -1) - (a**2).sum(dim=1)[..., :, None] - (b**2).sum(dim=1)[..., None, :]
 
-  def remaining_memory(self, device=None):
+  def remaining_memory(self, device):
     """
       Get remaining memory in gpu
     """
-    if device is None:
-      device = torch.device("cuda:0")
-
     torch.cuda.synchronize(device)
     torch.cuda.empty_cache()
     if self._pynvml_exist:
