@@ -1,5 +1,6 @@
 build
 dist
 *.egg-info
-fast_pytorch_kmeans\__pycache__
+fast_pytorch_kmeans/__pycache__
 upload_package.bat
+.idea
