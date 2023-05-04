@@ -133,7 +133,8 @@ class MultiKMeans:
 
     if centroids is not None:
       self.centroids = centroids
-    num_points_in_clusters = torch.ones(self.n_kmeans, self.n_clusters, device=device, dtype=X.dtype)
+    if self.minibatch is not None:
+      num_points_in_clusters = torch.ones(self.n_kmeans, self.n_clusters, device=device, dtype=X.dtype)
     closest = None
     for i in range(self.max_iter):
       iter_time = time()
@@ -152,10 +153,11 @@ class MultiKMeans:
       error = (c_grad - self.centroids).pow(2).sum()
       if self.minibatch is not None:
         lr = 1/num_points_in_clusters[:,:,None] * 0.9 + 0.1
+        for j in range(self.n_kmeans):
+          num_points_in_clusters[j, uniques[j][0]] += uniques[j][1]
       else:
         lr = 1
-      for j in range(self.n_kmeans):
-        num_points_in_clusters[j, uniques[j][0]] += uniques[j][1]
+
       self.centroids = self.centroids * (1-lr) + c_grad * lr
       if self.verbose >= 2:
         print('iter:', i, 'error:', error.item(), 'time spent:', round(time()-iter_time, 4))
