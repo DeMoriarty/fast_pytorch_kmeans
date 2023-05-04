@@ -43,8 +43,6 @@ class KMeans:
     self.verbose = verbose
     self.init_method = init_method
     self.minibatch = minibatch
-    self._loop = False
-    self._show = False
 
     if mode == 'cosine':
       self.sim_func = self.cos_sim
@@ -183,7 +181,6 @@ class KMeans:
       closest = self.max_sim(a=x, b=self.centroids)[1]
       matched_clusters, counts = closest.unique(return_counts=True)
 
-      c_grad = torch.zeros_like(self.centroids)
       expanded_closest = closest[None].expand(self.n_clusters, -1)
       mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[:, None]).to(X.dtype)
       c_grad = mask @ x / mask.sum(-1)[..., :, None]

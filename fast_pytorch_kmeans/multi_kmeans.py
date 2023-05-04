@@ -37,8 +37,6 @@ class MultiKMeans:
     self.verbose = verbose
     self.init_method = init_method
     self.minibatch = minibatch
-    self._loop = False
-    self._show = False
 
     if mode == 'cosine':
       self.sim_func = self.cos_sim
@@ -101,8 +99,8 @@ class MultiKMeans:
       a: torch.Tensor, shape: [m, n_features]
       b: torch.Tensor, shape: [n, n_features]
     """
-    device = a.device
-    n_samples = a.shape[-2]
+    # device = a.device
+    # n_samples = a.shape[-2]
 
     sim = self.sim_func(a, b)
     max_sim_v, max_sim_i = sim.max(dim=-1)
@@ -145,7 +143,6 @@ class MultiKMeans:
         x = X
       closest = self.max_sim(a=x, b=self.centroids)[1]
       uniques = [closest[i].unique(return_counts=True) for i in range(self.n_kmeans)]
-      c_grad = torch.zeros_like(self.centroids)
 
       expanded_closest = closest[:, None].expand(-1, self.n_clusters, -1)
       mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[None, :, None]).to(X.dtype)
