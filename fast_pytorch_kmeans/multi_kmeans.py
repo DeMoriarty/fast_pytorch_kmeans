@@ -35,11 +35,15 @@ class MultiKMeans:
     self.max_iter = max_iter
     self.tol = tol
     self.verbose = verbose
-    self.mode = mode
     self.init_method = init_method
     self.minibatch = minibatch
-    self._loop = False
-    self._show = False
+
+    if mode == 'cosine':
+      self.sim_func = self.cos_sim
+    elif mode == 'euclidean':
+      self.sim_func = self.euc_sim
+    else:
+      raise NotImplementedError()
 
     try:
       import PYNVML
@@ -69,13 +73,10 @@ class MultiKMeans:
     """
     return 2 * a @ b.transpose(-2, -1) -(a**2).sum(dim=-1)[..., :, None] - (b**2).sum(dim=-1)[..., None, :]
 
-  def remaining_memory(self, device=None):
+  def remaining_memory(self, device):
     """
       Get remaining memory in gpu
     """
-    if device is None:
-      device = torch.device("cuda:0")
-
     torch.cuda.synchronize(device)
     torch.cuda.empty_cache()
     if self._pynvml_exist:
@@ -95,14 +96,10 @@ class MultiKMeans:
       a: torch.Tensor, shape: [m, n_features]
       b: torch.Tensor, shape: [n, n_features]
     """
-    device = a.device
-    n_samples = a.shape[-2]
-    if self.mode == 'cosine':
-      sim_func = self.cos_sim
-    elif self.mode == 'euclidean':
-      sim_func = self.euc_sim
+    # device = a.device
+    # n_samples = a.shape[-2]
 
-    sim = sim_func(a, b)
+    sim = self.sim_func(a, b)
     max_sim_v, max_sim_i = sim.max(dim=-1)
     return max_sim_v, max_sim_i
 
@@ -133,30 +130,34 @@ class MultiKMeans:
 
     if centroids is not None:
       self.centroids = centroids
-    num_points_in_clusters = torch.ones(self.n_kmeans, self.n_clusters, device=device, dtype=X.dtype)
+    if self.minibatch is not None:
+      num_points_in_clusters = torch.ones(self.n_kmeans, self.n_clusters, device=device, dtype=X.dtype)
+
     closest = None
+    arranged_mask = torch.arange(self.n_clusters, device=device)[None, :, None]
     for i in range(self.max_iter):
       iter_time = time()
       if self.minibatch is not None:
         x = X[:, np.random.choice(n_samples, size=[self.minibatch], replace=False)]
+        closest = self.max_sim(a=x, b=self.centroids)[1]
+        uniques = [closest[i].unique(return_counts=True) for i in range(self.n_kmeans)]
       else:
         x = X
-      closest = self.max_sim(a=x, b=self.centroids)[1]
-      uniques = [closest[i].unique(return_counts=True) for i in range(self.n_kmeans)]
-      c_grad = torch.zeros_like(self.centroids)
+        closest = self.max_sim(a=x, b=self.centroids)[1]
 
       expanded_closest = closest[:, None].expand(-1, self.n_clusters, -1)
-      mask = (expanded_closest==torch.arange(self.n_clusters, device=device)[None, :, None]).to(X.dtype)
+      mask = (expanded_closest==arranged_mask).to(X.dtype)
       c_grad = mask @ x / mask.sum(-1, keepdim=True)
-      c_grad[c_grad!=c_grad] = 0 # remove NaNs
+      torch.nan_to_num_(c_grad)
 
       error = (c_grad - self.centroids).pow(2).sum()
       if self.minibatch is not None:
         lr = 1/num_points_in_clusters[:,:,None] * 0.9 + 0.1
+        for j in range(self.n_kmeans):
+          num_points_in_clusters[j, uniques[j][0]] += uniques[j][1]
       else:
         lr = 1
-      for j in range(self.n_kmeans):
-        num_points_in_clusters[j, uniques[j][0]] += uniques[j][1]
+
       self.centroids = self.centroids * (1-lr) + c_grad * lr
       if self.verbose >= 2:
         print('iter:', i, 'error:', error.item(), 'time spent:', round(time()-iter_time, 4))
