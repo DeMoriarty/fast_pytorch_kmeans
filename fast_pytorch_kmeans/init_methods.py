@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 
@@ -74,7 +75,7 @@ def _krandinit(data: torch.Tensor, k: int, sample_size: int = -1):
     .. [1] scipy/cluster/vq.py: _krandinit
     """
     mu = data.mean(axis=0)
-    if sample_size > 0:
+    if sample_size is not None and sample_size > 0:
         data = data[torch.randint(0, int(data.shape[0]),
                                   [min(100000, data.shape[0])], device=data.device)]
     if data.ndim == 1:
