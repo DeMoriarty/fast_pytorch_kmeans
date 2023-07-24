@@ -13,7 +13,7 @@ setup(
   install_requires=[ 
           'numpy',
           'torch',
-          'pynvml'
+          'nvidia-ml-py'
       ],
   classifiers=[
     'Development Status :: 3 - Alpha',
