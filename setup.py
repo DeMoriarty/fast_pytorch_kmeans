@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'fast_pytorch_kmeans', 
   packages = ['fast_pytorch_kmeans'],
-  version = '0.2.0.1', 
+  version = '0.2.1', 
   license='MIT',
   description = 'a fast kmeans clustering algorithm implemented in pytorch',
   author = 'demoriarty', 
@@ -13,7 +13,6 @@ setup(
   install_requires=[ 
           'numpy',
           'torch',
-          'pynvml'
       ],
   classifiers=[
     'Development Status :: 3 - Alpha',
