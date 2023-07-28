@@ -4,6 +4,7 @@ from torch.nn.functional import normalize
 from time import time
 import numpy as np
 from .init_methods import init_methods
+from .util import find_optimal_splits
 
 class MultiKMeans:
   '''
@@ -44,12 +45,6 @@ class MultiKMeans:
       self.sim_func = self.euc_sim
     else:
       raise NotImplementedError()
-
-    try:
-      import PYNVML
-      self._pynvml_exist = True
-    except ModuleNotFoundError:
-      self._pynvml_exist = False
     
     self.centroids = None
 
@@ -73,34 +68,58 @@ class MultiKMeans:
     """
     return 2 * a @ b.transpose(-2, -1) -(a**2).sum(dim=-1)[..., :, None] - (b**2).sum(dim=-1)[..., None, :]
 
-  def remaining_memory(self, device):
-    """
-      Get remaining memory in gpu
-    """
-    torch.cuda.synchronize(device)
-    torch.cuda.empty_cache()
-    if self._pynvml_exist:
-      pynvml.nvmlInit()
-      gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(device.index)
-      info = pynvml.nvmlDeviceGetMemoryInfo(gpu_handle)
-      remaining = info.free
-    else:
-      remaining = torch.cuda.memory_allocated(device)
-    return remaining
-
   def max_sim(self, a, b):
     """
       Compute maximum similarity (or minimum distance) of each vector
-      in a with all of the vectors in b
+      in `a` with all of the vectors in `b`
       Parameters:
-      a: torch.Tensor, shape: [m, n_features]
-      b: torch.Tensor, shape: [n, n_features]
+      a: torch.Tensor, shape: [n_kmeans, n_samples, n_features]
+      b: torch.Tensor, shape: [n_kmeans, n_clusters, n_features]
     """
     # device = a.device
     # n_samples = a.shape[-2]
 
-    sim = self.sim_func(a, b)
-    max_sim_v, max_sim_i = sim.max(dim=-1)
+    device = a.device.type
+    n_kmeans, n_samples, n_features = a.shape
+    n_clusters = b.shape[1]
+    assert a.shape[0] == b.shape[0] and a.shape[2] == b.shape[2]
+
+    max_sim_v = torch.empty(n_kmeans, n_samples, device=a.device, dtype=a.dtype)
+    max_sim_i = torch.empty(n_kmeans, n_samples, device=a.device, dtype=torch.int64)
+    if n_kmeans > n_samples:
+      def get_required_memory(chunk_size):
+          return chunk_size * n_samples * n_features * n_clusters * a.element_size()
+      
+      splits = find_optimal_splits(n_kmeans, get_required_memory, device=a.device, safe_mode=True)
+      chunk_size = math.ceil(n_kmeans / splits)
+      for i in range(splits):
+        if i*chunk_size >= n_kmeans:
+          continue
+        start, end = i * chunk_size, min((i + 1) * chunk_size, n_kmeans)
+        sub_a = a[start: end]
+        sub_b = b[start: end]
+        sub_sim = self.sim_func(sub_a, sub_b)
+        sub_max_sim_v, sub_max_sim_i = sub_sim.max(dim=-1)
+        del sub_sim
+        max_sim_v[start: end] = sub_max_sim_v
+        max_sim_i[start: end] = sub_max_sim_i
+
+    else:
+      def get_required_memory(chunk_size):
+          return chunk_size * n_kmeans * n_features * n_clusters * a.element_size()
+      splits = find_optimal_splits(n_samples, get_required_memory, device=a.device, safe_mode=True)
+      chunk_size = math.ceil(n_samples / splits)
+      for i in range(splits):
+        if i*chunk_size >= n_samples:
+          continue
+        start, end = i * chunk_size, min((i + 1) * chunk_size, n_samples)
+        sub_a = a[:, start: end]
+        sub_sim = self.sim_func(sub_a, b)
+        sub_max_sim_v, sub_max_sim_i = sub_sim.max(dim=-1)
+        del sub_sim
+        max_sim_v[:, start: end] = sub_max_sim_v
+        max_sim_i[:, start: end] = sub_max_sim_i
+      
     return max_sim_v, max_sim_i
 
 

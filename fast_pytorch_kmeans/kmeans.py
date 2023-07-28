@@ -4,6 +4,7 @@ from torch.nn.functional import normalize
 from time import time
 import numpy as np
 from .init_methods import init_methods
+from .util import find_optimal_splits
 
 class KMeans:
   '''
@@ -50,12 +51,6 @@ class KMeans:
       self.sim_func = self.euc_sim
     else:
       raise NotImplementedError()
-
-    try:
-      import PYNVML
-      self._pynvml_exist = True
-    except ModuleNotFoundError:
-      self._pynvml_exist = False
     
     self.centroids = None
 
@@ -83,60 +78,44 @@ class KMeans:
     """
     return 2 * a @ b.transpose(-2, -1) - (a**2).sum(dim=1)[..., :, None] - (b**2).sum(dim=1)[..., None, :]
 
-  def remaining_memory(self, device):
-    """
-      Get remaining memory in gpu
-    """
-    torch.cuda.synchronize(device)
-    torch.cuda.empty_cache()
-    if self._pynvml_exist:
-      pynvml.nvmlInit()
-      gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(device.index)
-      info = pynvml.nvmlDeviceGetMemoryInfo(gpu_handle)
-      remaining = info.free
-    else:
-      remaining = torch.cuda.memory_allocated(device)
-    return remaining
-
   def max_sim(self, a, b):
     """
       Compute maximum similarity (or minimum distance) of each vector
-      in a with all of the vectors in b
+      in `a` with all of the vectors in `b`
 
       Parameters:
-      a: torch.Tensor, shape: [m, n_features]
+      a: torch.Tensor, shape: [n_samples, n_features]
 
-      b: torch.Tensor, shape: [n, n_features]
+      b: torch.Tensor, shape: [n_clusters, n_features]
     """
     device = a.device
-    batch_size = a.shape[0]
+    n_samples = a.shape[0]
 
     if device.type == 'cpu':
       sim = self.sim_func(a, b)
       max_sim_v, max_sim_i = sim.max(dim=-1)
       return max_sim_v, max_sim_i
     else:
-      if a.dtype == torch.double:
-        expected = a.shape[0] * a.shape[1] * b.shape[0] * 8
-      if a.dtype == torch.float:
-        expected = a.shape[0] * a.shape[1] * b.shape[0] * 4
-      elif a.dtype == torch.half:
-        expected = a.shape[0] * a.shape[1] * b.shape[0] * 2
-      ratio = math.ceil(expected / self.remaining_memory(device))
-      subbatch_size = math.ceil(batch_size / ratio)
-      msv, msi = [], []
-      for i in range(ratio):
-        sub_x = a[i*subbatch_size: (i+1)*subbatch_size]
+      max_sim_v = torch.empty(n_samples, device=a.device, dtype=a.dtype)
+      max_sim_i = torch.empty(n_samples, device=a.device, dtype=torch.int64)
+
+      def get_required_memory(chunk_size):
+        return chunk_size * a.shape[1] * b.shape[0] * a.element_size() + n_samples * 2 * 4
+      
+      splits = find_optimal_splits(n_samples, get_required_memory, device=a.device, safe_mode=True)
+      chunk_size = math.ceil(n_samples / splits)
+
+      for i in range(splits):
+        if i*chunk_size >= n_samples:
+          continue
+        start, end = i * chunk_size, min((i + 1) * chunk_size, n_samples)
+        sub_x = a[start: end]
         sub_sim = self.sim_func(sub_x, b)
         sub_max_sim_v, sub_max_sim_i = sub_sim.max(dim=-1)
         del sub_sim
-        msv.append(sub_max_sim_v)
-        msi.append(sub_max_sim_i)
-      if ratio == 1:
-        max_sim_v, max_sim_i = msv[0], msi[0]
-      else:
-        max_sim_v = torch.cat(msv, dim=0)
-        max_sim_i = torch.cat(msi, dim=0)
+        max_sim_v[start: end] = sub_max_sim_v
+        max_sim_i[start: end] = sub_max_sim_i
+
       return max_sim_v, max_sim_i
 
   def fit_predict(self, X, centroids=None):
