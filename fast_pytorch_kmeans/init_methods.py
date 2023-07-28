@@ -1,7 +1,9 @@
+from typing import Union
+
 import torch
 
 
-def _kpp(data: torch.Tensor, k: int, sample_size: int = -1):
+def _kpp(data: torch.Tensor, k: int, sample_size: Union[int, None] = -1):
     """ Picks k points in the data based on the kmeans++ method.
 
     Parameters
@@ -27,7 +29,7 @@ def _kpp(data: torch.Tensor, k: int, sample_size: int = -1):
        on Discrete Algorithms, 2007.
     .. [2] scipy/cluster/vq.py: _kpp
     """
-    if sample_size > 0:
+    if sample_size and sample_size > 0:
         data = data[torch.randint(0, int(data.shape[0]),
                                   [min(100000, data.shape[0])], device=data.device)]
     dims = data.shape[1] if len(data.shape) > 1 else 1
@@ -47,7 +49,7 @@ def _kpp(data: torch.Tensor, k: int, sample_size: int = -1):
     return init
 
 
-def _krandinit(data: torch.Tensor, k: int, sample_size: int = -1):
+def _krandinit(data: torch.Tensor, k: int, sample_size: Union[int, None] = -1):
     """Returns k samples of a random variable whose parameters depend on data.
 
     More precisely, it returns k observations sampled from a Gaussian random
@@ -74,7 +76,7 @@ def _krandinit(data: torch.Tensor, k: int, sample_size: int = -1):
     .. [1] scipy/cluster/vq.py: _krandinit
     """
     mu = data.mean(axis=0)
-    if sample_size > 0:
+    if sample_size and sample_size > 0:
         data = data[torch.randint(0, int(data.shape[0]),
                                   [min(100000, data.shape[0])], device=data.device)]
     if data.ndim == 1:
