@@ -26,7 +26,7 @@ class KMeans:
     mode: {'euclidean', 'cosine'}, default: 'euclidean'
       Type of distance measure
       
-    init_method: {'random', 'point', '++'}
+    init_method: {'gaussian', 'random', 'kmeans++'}, default: 'random'
       Type of initialization
 
     minibatch: {None, int}, default: None
